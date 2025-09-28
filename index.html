@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script defer src="script.js"></script>
+  <link rel="stylesheet" href="style.css">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AutoForm Workflow Automation</title>
-  <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
-
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+    .page-section { padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    nav button { margin-right: 10px; }
+    form { display: flex; flex-direction: column; max-width: 500px; }
+    label { margin-top: 10px; }
+    input, select, textarea, button { margin-top: 5px; padding: 8px; font-size: 16px; }
+    ul { list-style: none; padding-left: 0; }
+    ul li { padding: 10px 0; border-bottom: 1px solid #ccc; }
+    pre { background: #f3f3f3; padding: 10px; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
 
@@ -17,10 +26,8 @@
     <form id="login-form">
       <label for="login-email">Email</label>
       <input type="email" id="login-email" required />
-
       <label for="login-password">Password</label>
       <input type="password" id="login-password" required />
-
       <button type="submit">Login</button>
     </form>
     <p>Don't have an account? <a href="#" onclick="showSection('register-section')">Register</a></p>
@@ -32,13 +39,10 @@
     <form id="register-form">
       <label for="register-name">Full Name</label>
       <input type="text" id="register-name" required />
-
       <label for="register-email">Email</label>
       <input type="email" id="register-email" required />
-
       <label for="register-password">Password</label>
       <input type="password" id="register-password" required />
-
       <label for="register-role">Role</label>
       <select id="register-role" required>
         <option value="">Select your role</option>
@@ -46,7 +50,6 @@
         <option value="manager">Manager</option>
         <option value="hr">HR</option>
       </select>
-
       <button type="submit">Register</button>
     </form>
     <p>Already have an account? <a href="#" onclick="showSection('login-section')">Login</a></p>
@@ -58,7 +61,7 @@
       <h1>Welcome to AutoForm</h1>
       <nav>
         <button onclick="showSection('new-request-section')">New Request</button>
-        <button onclick="showSection('status-section')">Track Status</button>
+        <button onclick="showSection('status-section'); loadStatus();">Track Status</button>
         <button onclick="showSection('feedback-section')">Feedback</button>
         <button onclick="logout()">Logout</button>
       </nav>
@@ -90,7 +93,7 @@
     </main>
   </section>
 
-  <!-- FILL FORM (example leave) -->
+  <!-- FILL FORM -->
   <section id="fill-form-section" class="page-section" style="display:none;">
     <header>
       <h1 id="form-title">Fill Form</h1>
@@ -98,7 +101,7 @@
     </header>
     <main>
       <form id="fill-form">
-        <!-- Dynamic form fields inserted here by JS -->
+        <!-- Dynamic form fields inserted by JS -->
       </form>
     </main>
   </section>
@@ -133,7 +136,7 @@
   </section>
 
   <script>
-    // Function to hide all sections and show only one
+    // ===== Section Management =====
     function showSection(sectionId) {
       document.querySelectorAll('.page-section').forEach(section => {
         section.style.display = 'none';
@@ -141,11 +144,167 @@
       document.getElementById(sectionId).style.display = 'block';
     }
 
-    // Placeholder logout
     function logout() {
       alert('You are logged out.');
+      localStorage.removeItem('currentUser');
       showSection('login-section');
     }
+
+    // ===== User Management =====
+    function getUsers() { return JSON.parse(localStorage.getItem('users') || '[]'); }
+    function saveUsers(users) { localStorage.setItem('users', JSON.stringify(users)); }
+
+    document.getElementById('register-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const name = document.getElementById('register-name').value;
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+      const role = document.getElementById('register-role').value;
+
+      const users = getUsers();
+      if(users.find(u => u.email === email)){
+        alert('Email already registered!');
+        return;
+      }
+      users.push({ name, email, password, role });
+      saveUsers(users);
+      alert('Registration successful!');
+      this.reset();
+      showSection('login-section');
+    });
+
+    document.getElementById('login-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      const users = getUsers();
+      const user = users.find(u => u.email === email && u.password === password);
+      if(user){
+        alert(`Welcome, ${user.name}`);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        showSection('dashboard-section');
+      } else {
+        alert('Invalid email or password!');
+      }
+    });
+
+    // ===== New Request & Dynamic Forms with Final Letter =====
+    document.getElementById('request-type-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const type = document.getElementById('request-type').value;
+      if(!type) return;
+
+      const formTitle = document.getElementById('form-title');
+      const fillForm = document.getElementById('fill-form');
+      fillForm.innerHTML = '';
+      formTitle.textContent = `Fill ${type.charAt(0).toUpperCase() + type.slice(1)} Form`;
+
+      if(type === 'leave'){
+        fillForm.innerHTML = `
+          <label for="leave-start">Start Date:</label>
+          <input type="date" id="leave-start" required>
+          <label for="leave-end">End Date:</label>
+          <input type="date" id="leave-end" required>
+          <label for="leave-reason">Reason:</label>
+          <textarea id="leave-reason" rows="3" required></textarea>
+          <button type="submit">Generate Letter</button>
+        `;
+      } else if(type === 'permission'){
+        fillForm.innerHTML = `
+          <label for="permission-date">Date:</label>
+          <input type="date" id="permission-date" required>
+          <label for="permission-time">Time:</label>
+          <input type="time" id="permission-time" required>
+          <label for="permission-reason">Reason:</label>
+          <textarea id="permission-reason" rows="3" required></textarea>
+          <button type="submit">Generate Letter</button>
+        `;
+      } else if(type === 'it'){
+        fillForm.innerHTML = `
+          <label for="it-issue">Issue Description:</label>
+          <textarea id="it-issue" rows="4" required></textarea>
+          <button type="submit">Generate Letter</button>
+        `;
+      }
+
+      showSection('fill-form-section');
+    });
+
+    document.getElementById('fill-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const fillForm = this;
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      const requestType = document.getElementById('form-title').textContent.replace('Fill ', '');
+      const formData = {};
+      fillForm.querySelectorAll('input, textarea').forEach(field => {
+        formData[field.id] = field.value;
+      });
+
+      // Generate final letter
+      let letter = `Dear ${requestType} Approver,\n\n`;
+      for (let key in formData) {
+        letter += `${key.replace(/-/g,' ')}: ${formData[key]}\n`;
+      }
+      letter += `\nThank you,\n${user.name}`;
+
+      // Replace form with final letter textarea
+      fillForm.innerHTML = `
+        <label for="final-letter">Final Letter (editable):</label>
+        <textarea id="final-letter" rows="10" required>${letter}</textarea>
+        <button type="submit">Submit Request</button>
+      `;
+
+      fillForm.addEventListener('submit', function submitLetter(e2){
+        e2.preventDefault();
+        const finalText = document.getElementById('final-letter').value;
+
+        const requests = JSON.parse(localStorage.getItem('requests') || '[]');
+        requests.push({ user: user.email, type: requestType, data: formData, letter: finalText, status: 'Pending' });
+        localStorage.setItem('requests', JSON.stringify(requests));
+
+        alert('Request submitted successfully!');
+        showSection('dashboard-section');
+
+        fillForm.removeEventListener('submit', submitLetter);
+      });
+    });
+
+    // ===== Status Tracking =====
+    function loadStatus() {
+      const statusList = document.getElementById('status-list');
+      statusList.innerHTML = '';
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      const requests = JSON.parse(localStorage.getItem('requests') || '[]');
+
+      const userRequests = requests.filter(r => r.user === user.email);
+      if(userRequests.length === 0){
+        statusList.innerHTML = '<li>No requests found.</li>';
+        return;
+      }
+
+      userRequests.forEach((req) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${req.type}</strong> - Status: ${req.status}<br>
+                        <pre>${req.letter || 'No letter submitted.'}</pre>`;
+        statusList.appendChild(li);
+      });
+    }
+
+    // ===== Feedback =====
+    document.getElementById('feedback-form').addEventListener('submit', function(e){
+      e.preventDefault();
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      const text = document.getElementById('feedback-text').value;
+
+      const feedbacks = JSON.parse(localStorage.getItem('feedbacks') || '[]');
+      feedbacks.push({ user: user.email, text });
+      localStorage.setItem('feedbacks', JSON.stringify(feedbacks));
+
+      alert('Feedback submitted. Thank you!');
+      this.reset();
+      showSection('dashboard-section');
+    });
   </script>
 </body>
 </html>
