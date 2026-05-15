@@ -7,7 +7,7 @@ Track response status.
 Save time and reduce paperwork.
 Flow from Employee to Manager and then to HR. 
 # Ideal For
-Universities, offices, and large organizations.
+Universities, offices, and large organizations.Can be used in governmenet as well as in private sectors. 
 # Benefits
 Fast and easy letter generation.
 Reduces manual effort.
