@@ -5,6 +5,7 @@ Auto-generate letters from user input.
 Send requests for approval.
 Track response status.
 Save time and reduce paperwork.
+Flow from Employee to Manager and then to HR. 
 # Ideal For
 Universities, offices, and large organizations.
 # Benefits
